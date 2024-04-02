@@ -19,7 +19,21 @@ public class BTDeviceInfo {
 
     public String getBattery()
     {
-        return Battery;
+        if (Battery != null && !Battery.equals(""))
+        {
+            String percent = Battery;
+            int index = percent.lastIndexOf("/");
+            int percentIndex = percent.lastIndexOf("]");
+            if (index != -1 && percentIndex != -1)
+            {
+                percent = percent.substring(index + 1, percentIndex);
+                return percent;
+            }
+            else
+                return Battery;
+        }
+        else
+            return Battery;
     }
 
     public String getServiceUuid()
