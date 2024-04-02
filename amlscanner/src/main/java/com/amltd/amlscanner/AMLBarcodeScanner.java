@@ -521,10 +521,10 @@ public class AMLBarcodeScanner {
             Intent intent = new Intent();
             intent.setAction(Values.GET_BT_DEVICE_INFO_ACTION);
             intent.putExtras(bundle);
-
+            intent.setClassName(Values.PACKAGE_NAME, Values.CLASS_NAME);
             //Calling startService and passing in our intent is how we send the intent to the
             //scanner service for processing.
-            startService(intent);
+            mContext.sendBroadcast(intent);
         }
     }
 
