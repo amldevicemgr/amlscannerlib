@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 33
-        versionCode 1
-        versionName "1.0"
+        versionCode 11
+        versionName "1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -33,6 +33,7 @@ dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.3.0'
     implementation 'com.google.android.material:material:1.3.0'
+    implementation 'com.google.code.gson:gson:2.6.2'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
@@ -45,8 +46,8 @@ afterEvaluate {
                 from components.release
 
                 groupId = 'com.github.amldevicemgr'
-                artifactId = 'amlscannerlibr'
-                version = '1.0'
+                artifactId = 'amlscannerlib'
+                version = '1.1'
             }
         }
     }

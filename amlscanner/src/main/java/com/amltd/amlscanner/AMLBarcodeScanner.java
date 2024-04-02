@@ -12,9 +12,12 @@ import android.os.Parcel;
 import android.os.ResultReceiver;
 import android.util.Log;
 
+import com.amltd.amlscanner.btscanner.BTDeviceInfo;
+import com.amltd.amlscanner.btscanner.BTScanDevice;
 import com.amltd.amlscanner.settings.KeyboardWedgeMode;
 import com.amltd.amlscanner.settings.PresentationMode;
 import com.amltd.amlscanner.settings.ScannerSettings;
+import com.google.gson.Gson;
 
 public class AMLBarcodeScanner {
 
@@ -43,6 +46,10 @@ public class AMLBarcodeScanner {
         // It does not mean there was a barcode scanned.
         // The intent holds no data other than the action string.
         filter.addAction(Values.ACTION_TRIGGER_RELEASED);
+        //Add this if we want to listen for BT Scanner events
+        filter.addAction(Values.ACTION_RING_SCANNER_CONNECTED);
+        filter.addAction(Values.ACTION_RING_SCANNER_DISCONNECTED);
+        filter.addAction(Values.ACTION_RING_SCANNER_LOW_BATTERY);
 
         //This broadcast receiver will handle incoming intents from the scanner service.
         mReceiver = new BroadcastReceiver() {
@@ -73,6 +80,29 @@ public class AMLBarcodeScanner {
                             if (mOnTriggerReleasedListener != null)
                                 mOnTriggerReleasedListener.onTriggerReleased();
                             break;
+                        case Values.ACTION_RING_SCANNER_CONNECTED:
+                        case Values.ACTION_RING_SCANNER_DISCONNECTED:
+                            String btscannerstring = intent.getStringExtra(Values.EXTRA_RING_SCANNER);
+                            if (btscannerstring != null && !btscannerstring.equals(""))
+                            {
+                                BTScanDevice btscanner = new Gson().fromJson(btscannerstring, BTScanDevice.class);
+                                if (action.equals(Values.ACTION_RING_SCANNER_CONNECTED))
+                                {
+                                    if (mOnBTScannerConnected != null)
+                                        mOnBTScannerConnected.onBTScannerConnected(btscanner);
+                                }
+                                else
+                                {
+                                    if (mOnBTScannerDisconnected != null)
+                                        mOnBTScannerDisconnected.onBTScannerDisconnected(btscanner);
+                                }
+                            }
+                            break;
+                        case Values.ACTION_RING_SCANNER_LOW_BATTERY:
+                            int battery = intent.getIntExtra(Values.EXTRA_RING_SCANNER_LOW_BATTERY, -1);
+                            if (mOnBTScannerLowBattery != null)
+                                mOnBTScannerLowBattery.onBTScannerLowBattery(battery);
+                            break;
                     }
                 }
             }
@@ -100,6 +130,30 @@ public class AMLBarcodeScanner {
             //Make sure to unregister when we no longer need to listen to the scanner service.
             mContext.unregisterReceiver(br);
         }
+    }
+
+    /**
+     * Sets the OnBTScannerConnected to receive notifications when a bt scanner is connected.
+     * @param listener The OnBTScannerConnected to listen for bt scanner connection.
+     */
+    public void setOnBTScannerConnected(OnBTScannerConnected listener) {
+        mOnBTScannerConnected = listener;
+    }
+
+    /**
+     * Sets the OnBTScannerDisconnected to receive notifications when a bt scanner is disconnected.
+     * @param listener The OnBTScannerDisconnected to listen for bt scanner disconnection.
+     */
+    public void setOnBTScannerDisconnected(OnBTScannerDisconnected listener) {
+        mOnBTScannerDisconnected = listener;
+    }
+
+    /**
+     * Sets the OnBTScannerLowBattery to receive notifications when the bt scanner has a low battery.
+     * @param listener The OnBTScannerLowBattery to listen for bt scanner low battery events.
+     */
+    public void setOnBTScannerLowBattery(OnBTScannerLowBattery listener) {
+        mOnBTScannerLowBattery = listener;
     }
 
     /**
@@ -424,20 +478,54 @@ public class AMLBarcodeScanner {
      * Send a correctly setup ScannerSettings config to the scanner service to be processed in order to
      * change the scanner behavior.
      * @param settings The scanner settings generated with ScannerSettings.
-     * @throws Exception Throws Exception if settings is null.
      */
-    public void changeSettings(ScannerSettings settings) throws Exception {
+    public void changeSettings(ScannerSettings settings) {
 
-        if (settings == null)
-            throw new Exception("ScannerSettings cannot be null.");
+        if (settings != null)
+        {
+            Bundle bundle = SettingsHelper.parseSettingsBundle(settings);
+            Intent intent = new Intent();
+            intent.putExtras(bundle);
 
-        Bundle bundle = SettingsHelper.parseSettingsBundle(settings);
-        Intent intent = new Intent();
-        intent.putExtras(bundle);
+            //Calling startService and passing in our intent is how we send the intent to the
+            //scanner service for processing.
+            startService(intent);
+        }
+    }
 
-        //Calling startService and passing in our intent is how we send the intent to the
-        //scanner service for processing.
-        startService(intent);
+    /**
+     * Request the current bt scanner info asynchronously.
+     * @param receiver The OnReceiveBTDeviceInfo listener to receive the bt scanner info.
+     */
+    public void getBTScannerInfo(OnReceiveBTDeviceInfo receiver) {
+        if (receiver != null)
+        {
+            Bundle bundle = new Bundle();
+            ResultReceiver resultReceiver = new ResultReceiver(new Handler()) {
+                @Override
+                protected void onReceiveResult(int resultCode, Bundle resultData) {
+                    String btscannerstring = resultData.getString(Values.EXTRA_BT_DEVICE_INFO);
+                    BTDeviceInfo btscanner = new Gson().fromJson(btscannerstring, BTDeviceInfo.class);
+                    receiver.onReceive(btscanner);
+                }
+            };
+            //If you change the package name of this file use this before adding to the bundle
+            if (!"com.amltd.barcodelib.sdk.BarcodeScanner".equals(getClass().getCanonicalName())) {
+                Parcel p = Parcel.obtain();
+                resultReceiver.writeToParcel(p, 0);
+                p.setDataPosition(0);
+                resultReceiver = ResultReceiver.CREATOR.createFromParcel(p);
+                p.recycle();
+            }
+            bundle.putParcelable(Intent.EXTRA_RESULT_RECEIVER, resultReceiver);
+            Intent intent = new Intent();
+            intent.setAction(Values.GET_BT_DEVICE_INFO_ACTION);
+            intent.putExtras(bundle);
+
+            //Calling startService and passing in our intent is how we send the intent to the
+            //scanner service for processing.
+            startService(intent);
+        }
     }
 
     /**
@@ -502,6 +590,15 @@ public class AMLBarcodeScanner {
 
     //For receiving broadcast intents
     private BroadcastReceiver mReceiver;
+
+    //For incoming bt scanner connected action
+    private OnBTScannerConnected mOnBTScannerConnected;
+
+    //For incoming bt scanner disconnected action
+    private OnBTScannerDisconnected mOnBTScannerDisconnected;
+
+    //For incoming bt scanner low battery action
+    private OnBTScannerLowBattery mOnBTScannerLowBattery;
 
     //For incoming scanned action
     private OnScannedListener mOnScannedListener;

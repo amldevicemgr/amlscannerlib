@@ -26,4 +26,16 @@ class Values {
     public static final String ACTION_SHOW_IME = PACKAGE_NAME + ".SHOW_IME";
     // Set this action to programmatically hide the virtual keyboard
     public static final String ACTION_HIDE_IME = PACKAGE_NAME + ".HIDE_IME";
+    public static final String EXTRA_BT_DEVICE_INFO = "PACKAGE_NAME";
+    public static final String GET_BT_DEVICE_INFO_ACTION = PACKAGE_NAME + ".GET_BT_DEVICE_INFO";
+    // Action string received if a ring scanner was connected.
+    public static final String ACTION_RING_SCANNER_CONNECTED = PACKAGE_NAME + ".RING_SCANNER_CONNECTED";
+    // Action string received if a ring scanner was connected.
+    public static final String ACTION_RING_SCANNER_DISCONNECTED = PACKAGE_NAME + ".RING_SCANNER_DISCONNECTED";
+    // Action string received if a ring scanner has low battery.
+    public static final String ACTION_RING_SCANNER_LOW_BATTERY = PACKAGE_NAME + ".RING_SCANNER_LOW_BATTERY";
+    // The key name to use when getting ring scanner for connection or disconnection.
+    public static final String EXTRA_RING_SCANNER = "RING_SCANNER";
+    // The key name to use when getting ring scanner low battery message.
+    public static final String EXTRA_RING_SCANNER_LOW_BATTERY = "RING_SCANNER_LOW_BATTERY";
 }

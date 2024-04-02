@@ -6,11 +6,18 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.amltd.amlscanner.AMLBarcodeScanner;
+import com.amltd.amlscanner.AMLDevice;
+import com.amltd.amlscanner.OnBTScannerConnected;
+import com.amltd.amlscanner.OnBTScannerDisconnected;
+import com.amltd.amlscanner.OnBTScannerLowBattery;
 import com.amltd.amlscanner.OnErrorListener;
+import com.amltd.amlscanner.OnReceiveBTDeviceInfo;
 import com.amltd.amlscanner.OnReceiveSettings;
 import com.amltd.amlscanner.OnScannedListener;
 import com.amltd.amlscanner.OnTriggerPulledListener;
 import com.amltd.amlscanner.OnTriggerReleasedListener;
+import com.amltd.amlscanner.btscanner.BTDeviceInfo;
+import com.amltd.amlscanner.btscanner.BTScanDevice;
 import com.amltd.amlscanner.settings.ScannerSettings;
 
 public class MainActivity extends AppCompatActivity {
@@ -49,9 +56,59 @@ public class MainActivity extends AppCompatActivity {
         amlScanner.getScannerSettings(new OnReceiveSettings() {
             @Override
             public void onReceive(ScannerSettings settings) {
-
+                String suffix = settings.getSuffix();
+                if (suffix == null || !suffix.equals("!"))
+                {
+                    //Set suffix
+                    settings.setSuffix("!");
+                    amlScanner.changeSettings(settings);
+                }
             }
         });
         amlScanner.disableKeyboardWedge();
+    }
+    BTDeviceInfo storedBTScanner;
+    public void getCurrentBTDevice()
+    {
+        if (AMLDevice.isBTScannerSupported(getApplicationContext()))
+        {
+            amlScanner.getBTScannerInfo(new OnReceiveBTDeviceInfo() {
+                @Override
+                public void onReceive(BTDeviceInfo btDevice) {
+                    /*BTDeviceInfo will never be null. If there is not a bt scanner stored for the device, all properties
+                    of BTDeviceInfo will be empty strings.*/
+                    String btName = btDevice.getBTName();
+                    if (btName != null && !btName.equals(""))
+                    {
+                        storedBTScanner = btDevice;
+                        registerBTScannerEvents();
+                    }
+                }
+            });
+        }
+    }
+
+    public void registerBTScannerEvents()
+    {
+        amlScanner.setOnBTScannerConnected(new OnBTScannerConnected() {
+            @Override
+            public void onBTScannerConnected(BTScanDevice btDevice) {
+                //Implement handling
+            }
+        });
+
+        amlScanner.setOnBTScannerDisconnected(new OnBTScannerDisconnected() {
+            @Override
+            public void onBTScannerDisconnected(BTScanDevice btDevice) {
+                //Implement handling
+            }
+        });
+
+        amlScanner.setOnBTScannerLowBattery(new OnBTScannerLowBattery() {
+            @Override
+            public void onBTScannerLowBattery(int battery) {
+                //Implement handling
+            }
+        });
     }
 }
